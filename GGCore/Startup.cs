@@ -28,6 +28,15 @@ namespace GGCore
         {
 
             services.AddControllers();
+
+            services.AddCors(o =>
+            {
+                o.AddPolicy("AllowAll", builder =>
+                    builder.AllowAnyOrigin()
+                    .AllowAnyMethod()
+                    .AllowAnyHeader());
+            });
+
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "GGCore", Version = "v1" });
@@ -45,6 +54,8 @@ namespace GGCore
             }
 
             app.UseHttpsRedirection();
+
+            app.UseCors("AllowAll");
 
             app.UseRouting();
 
