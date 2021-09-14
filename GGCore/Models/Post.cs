@@ -11,6 +11,7 @@ namespace GGCore.Models
         public string Content { get; set; }
 
         // 1:M relation with Comment
-        public IEnumerable<Comment> Comments { get; set; }
+        public IList<Comment> Comments { get; set; }
     }
 }
+ 
