@@ -1,5 +1,6 @@
 using GGCore.Configs;
 using GGCore.Data;
+using GGCore.Repositories;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using Newtonsoft.Json;
 
 namespace GGCore
 {
@@ -27,6 +29,8 @@ namespace GGCore
 
             services.AddAutoMapper(typeof(MapperInitializer));
 
+            services.AddTransient<IUnitOfWork, UnitOfWork>();
+
             services.AddCors(o =>
             {
                 o.AddPolicy("AllowAll", builder =>
@@ -40,7 +44,8 @@ namespace GGCore
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "GGCore", Version = "v1" });
             });
 
-            services.AddControllers();
+            services.AddControllers().AddNewtonsoftJson(options =>
+                options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore); ;
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
