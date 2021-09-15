@@ -1,88 +1,89 @@
-﻿using GGCore.Models;
+﻿using GGCore.Configs;
+using GGCore.Configs.Seeders;
+using GGCore.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+
 
 namespace GGCore.Data
 {
-    public class DataContext : DbContext
+    public class DataContext : IdentityDbContext<User>
     {
         public DataContext(DbContextOptions options) : base(options)
         {
-            Database.EnsureDeleted();
-            Database.EnsureCreated();
+            //Database.EnsureDeleted();
+            //Database.EnsureCreated();
         }
 
         public DbSet<Post> Posts { get; set; }
         public DbSet<Comment> Comments { get; set; }
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        protected override void OnModelCreating(ModelBuilder builder)
         {
-            //Other configuration left out to focus on many-to-many
-            base.OnModelCreating(modelBuilder);
+            base.OnModelCreating(builder);
 
-            modelBuilder.Entity<Post>().HasData(
-                new Post
-                {
-                    Id = 1,
-                    Title = "Post 1",
-                    Content = "Content of First Post"
-                },
-                new Post
-                {
-                    Id = 2,
-                    Title = "Post 2",
-                    Content = "Content of Second Post"
-                },
-                new Post
-                {
-                    Id = 3,
-                    Title = "Post 3",
-                    Content = "Content of Third Post"
-                });
-            modelBuilder.Entity<Comment>().HasData(
-                new Comment
-                {
-                    Id = 1,
-                    Text = "Comment 1",
-                    PostId = 1
-                },
-                new Comment
-                {
-                    Id = 2,
-                    Text = "Comment 2",
-                    PostId = 2
-                },
-                new Comment
-                {
-                    Id = 3,
-                    Text = "Comment 3",
-                    PostId = 3
-                });
-        }
+            builder.ApplyConfiguration(new RoleSeeder());
+            builder.ApplyConfiguration(new PostSeeder());
+            builder.ApplyConfiguration(new CommentSeeder());
 
-        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default(CancellationToken))
-        {
-            var entries = ChangeTracker
-                .Entries()
-                .Where(e => e.Entity is Entity && (
-                        e.State == EntityState.Added
-                        || e.State == EntityState.Modified)); 
-
-            foreach (var entityEntry in entries)
+            // Change default Identity table names
+            builder.Entity<User>(entity =>
             {
-                ((Entity)entityEntry.Entity).Updated = DateTime.Now;
+                entity.ToTable(name: "Users");
+            });
 
-                if (entityEntry.State == EntityState.Added)
-                {
-                    ((Entity)entityEntry.Entity).Created = DateTime.Now;
-                }
-            }
+            builder.Entity<IdentityRole>(entity =>
+            {
+                entity.ToTable(name: "Roles");
+            });
+            builder.Entity<IdentityUserRole<string>>(entity =>
+            {
+                entity.ToTable("UserRoles");
+            });
 
-            return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+            builder.Entity<IdentityUserClaim<string>>(entity =>
+            {
+                entity.ToTable("UserClaims");
+            });
+
+            builder.Entity<IdentityUserLogin<string>>(entity =>
+            {
+                entity.ToTable("UserLogins");  
+            });
+
+            builder.Entity<IdentityRoleClaim<string>>(entity =>
+            {
+                entity.ToTable("RoleClaims");
+
+            });
+
+            builder.Entity<IdentityUserToken<string>>(entity =>
+            {
+                entity.ToTable("UserTokens");
+
+            });
         }
+
+        //public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default(CancellationToken))
+        //{
+        //    var entries = ChangeTracker
+        //        .Entries()
+        //        .Where(e => e.Entity is Entity && (
+        //                e.State == EntityState.Added
+        //                || e.State == EntityState.Modified)); 
+
+        //    foreach (var entityEntry in entries)
+        //    {
+        //        ((Entity)entityEntry.Entity).Updated = DateTime.Now;
+
+        //        if (entityEntry.State == EntityState.Added)
+        //        {
+        //            ((Entity)entityEntry.Entity).Created = DateTime.Now;
+        //        }
+        //    }
+
+        //    return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        //}
     }
 }

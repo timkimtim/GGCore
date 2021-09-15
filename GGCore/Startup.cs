@@ -1,8 +1,10 @@
 using GGCore.Configs;
 using GGCore.Data;
 using GGCore.Repositories;
+using GGCore.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,9 +29,9 @@ namespace GGCore
 
             services.AddDbContext<DataContext>(options => options.UseNpgsql(Configuration.GetConnectionString("PgsqlConnection")));
 
-            services.AddAutoMapper(typeof(MapperInitializer));
-
-            services.AddTransient<IUnitOfWork, UnitOfWork>();
+            services.AddAuthentication();
+            services.ConfigureIdentity();
+            services.ConfigureJWT(Configuration);
 
             services.AddCors(o =>
             {
@@ -38,6 +40,12 @@ namespace GGCore
                     .AllowAnyMethod()
                     .AllowAnyHeader());
             });
+
+            services.AddAutoMapper(typeof(MapperInitializer));
+
+            services.AddTransient<IUnitOfWork, UnitOfWork>();
+
+            services.AddScoped<IAuthManager, AuthManager>();
 
             services.AddSwaggerGen(c =>
             {
@@ -64,6 +72,8 @@ namespace GGCore
 
             app.UseRouting();
 
+            app.UseAuthentication(); // this one first
+             
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>

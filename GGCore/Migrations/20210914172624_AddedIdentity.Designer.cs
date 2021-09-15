@@ -3,15 +3,17 @@ using System;
 using GGCore.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace GGCore.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20210914172624_AddedIdentity")]
+    partial class AddedIdentity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -226,22 +228,6 @@ namespace GGCore.Migrations
                         .HasDatabaseName("RoleNameIndex");
 
                     b.ToTable("Roles");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = "44f6896f-702c-45de-b7d7-af701b93d6e5",
-                            ConcurrencyStamp = "6f3695d1-58d4-4194-b2ee-6d23daa1a644",
-                            Name = "Super-Admin",
-                            NormalizedName = "SUPER-ADMIN"
-                        },
-                        new
-                        {
-                            Id = "b7fb2bb9-d542-4ad7-a12e-88009903c290",
-                            ConcurrencyStamp = "bfce86e7-336b-4dcd-88d9-e25ed27093e2",
-                            Name = "User",
-                            NormalizedName = "USER"
-                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
