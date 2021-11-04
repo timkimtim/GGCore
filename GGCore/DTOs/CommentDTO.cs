@@ -6,22 +6,10 @@ using System.Threading.Tasks;
 
 namespace GGCore.DTOs
 {
-    public record CommentDTO : EntityDTO
+    public record CommentDTO
     {
         [Required]
         public string Text { get; set; }
-        public PostDTO Post { get; set; }
-
-        // 1:M relation with User
-        //public int UserId { get; set; }
-        //public User User { get; set; }
-    }
-
-    public record CreateCommentDTO : CreateEntityDTO
-    {
-        [Required]
-        public string Text { get; set; }
-        public int PostId { get; set; }
 
         // 1:M relation with User
         //public int UserId { get; set; }

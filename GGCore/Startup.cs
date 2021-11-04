@@ -1,10 +1,11 @@
+using AspNetCoreRateLimit;
 using GGCore.Configs;
 using GGCore.Data;
 using GGCore.Repositories;
 using GGCore.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,6 +30,14 @@ namespace GGCore
 
             services.AddDbContext<DataContext>(options => options.UseNpgsql(Configuration.GetConnectionString("PgsqlConnection")));
 
+            services.AddMemoryCache();
+
+            services.ConfigureRateLimiting();
+            services.AddHttpContextAccessor();
+
+            services.AddResponseCaching();
+            services.ConfigureHttpCacheHeaders();
+
             services.AddAuthentication();
             services.ConfigureIdentity();
             services.ConfigureJWT(Configuration);
@@ -52,8 +61,15 @@ namespace GGCore
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "GGCore", Version = "v1" });
             });
 
-            services.AddControllers().AddNewtonsoftJson(options =>
+            services.AddControllers(config => {
+                config.CacheProfiles.Add("30SecondsDuration", new CacheProfile
+                {
+                    Duration = 30
+                });
+            }).AddNewtonsoftJson(options =>
                 options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore); ;
+
+            services.ConfigureVersioning();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -66,9 +82,15 @@ namespace GGCore
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "GGCore v1"));
             }
 
+            app.ConfigureExceptionHandler();
+
             app.UseHttpsRedirection();
 
             app.UseCors("AllowAll");
+
+            app.UseResponseCaching();
+            app.UseHttpCacheHeaders();
+            app.UseIpRateLimiting();
 
             app.UseRouting();
 

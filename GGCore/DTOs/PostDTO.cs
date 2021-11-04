@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace GGCore.DTOs
 {
-    public record CreatePostDTO : CreateEntityDTO
+    public record CreatePostDTO
     {
         [Required]
         [StringLength(60, ErrorMessage = "Длина {0} превышает допустимое значение ({1} символов).")]
@@ -15,13 +15,12 @@ namespace GGCore.DTOs
         public string Content { get; set; }
     }
 
-    public record PostDTO : EntityDTO
+    public record UpdatePostDTO : CreatePostDTO
     {
-        [Required]
-        [StringLength(60, ErrorMessage = "Длина {0} превышает допустимое значение ({1} символов).")]
-        public string Title { get; set; }
-        [Required]
-        public string Content { get; set; }
+    }
+
+    public record PostDTO : CreatePostDTO
+    {
         public IList<CommentDTO> Comments { get; set; }
     }
 }

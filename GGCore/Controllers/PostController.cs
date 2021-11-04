@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using GGCore.DTOs;
+using GGCore.Models;
 using GGCore.Repositories;
+using Marvin.Cache.Headers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -13,7 +15,9 @@ using System.Threading.Tasks;
 
 namespace GGCore.Controllers
 {
+    //[ApiVersion("2.0")]
     [ApiController]
+    //[Route("api/v{v:apiversion}/posts")]
     [Route("api/posts")]
     public class PostController : ControllerBase
     {
@@ -28,40 +32,100 @@ namespace GGCore.Controllers
             _mapper = mapper;
         }
 
-        [HttpGet, Authorize]
+        //[Authorize]
+        [HttpGet]
+        //[ResponseCache(CacheProfileName = "30SecondsDuration")]
+        [HttpCacheExpiration(CacheLocation = CacheLocation.Public, MaxAge = 60)] // overwrite default in Startup.cs
+        [HttpCacheValidation(MustRevalidate = false)] // overwrite default in Startup.cs
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetPosts()
+        public async Task<IActionResult> GetPosts([FromQuery] RequestParams requestParams)
         {
-            try
-            {
-                var posts = await _unitOfWork.Posts.GetAll();
-                var result = _mapper.Map<IList<PostDTO>>(posts);
-                return Ok(result);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, $"Smth went wrong in the {nameof(GetPosts)}");
-                return StatusCode(500, "Internal Server Error. Please try again later.");
-            }
+            var posts = await _unitOfWork.Posts.GetPagedList(requestParams);
+            var result = _mapper.Map<IList<PostDTO>>(posts);
+            return Ok(result);
         }
 
-        [HttpGet("{id:int}")]
+        [HttpGet("{id:int}", Name = "GetPost")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetPost(int id)
         {
-            try
+            var post = await _unitOfWork.Posts.Get(q => q.Id == id, new List<string> { "Comments" });
+            var result = _mapper.Map<PostDTO>(post);
+            return Ok(result);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> CreatePost([FromBody] CreatePostDTO postDTO)
+        {
+            if (!ModelState.IsValid)
             {
-                var post = await _unitOfWork.Posts.Get(q => q.Id == id, new List<string> { "Comments" });
-                var result = _mapper.Map<PostDTO>(post);
-                return Ok(result);
+                _logger.LogError($"Invalid POST attempt in {nameof(CreatePost)}");
+                return BadRequest(ModelState);
             }
-            catch (Exception e)
+
+            var post = _mapper.Map<Post>(postDTO);
+            await _unitOfWork.Posts.Insert(post);
+            await _unitOfWork.Save();
+
+            return CreatedAtRoute("GetPost", new { id = post.Id }, post);
+        }
+
+        //[Authorize(Roles = "Admin")]
+        [HttpPut("{id:int}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> UpdatePost(int id, [FromBody] UpdatePostDTO postDTO)
+        {
+            if (!ModelState.IsValid || id < 1)
             {
-                _logger.LogError(e, $"Smth went wrong in the {nameof(GetPost)}");
-                return StatusCode(500, "Internal Server Error. Please try again later.");
+                _logger.LogError($"Invalid POST attempt in {nameof(UpdatePost)}");
+                return BadRequest(ModelState);
             }
+
+            var post = await _unitOfWork.Posts.Get(q => q.Id == id);
+            if (post == null)
+            {
+                _logger.LogError($"Invalid POST attempt in {nameof(UpdatePost)}");
+                return BadRequest("Submitted data is invalid");
+            }
+
+            _mapper.Map(postDTO, post);
+            _unitOfWork.Posts.Update(post);
+            await _unitOfWork.Save();
+
+            return NoContent();
+        }
+
+        [HttpDelete("{id:int}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> DeletePost(int id)
+        {
+            if (id < 1)
+            {
+                _logger.LogError($"Invalid POST attempt in {nameof(UpdatePost)}");
+                return BadRequest(ModelState);
+            }
+
+            var post = await _unitOfWork.Posts.Get(q => q.Id == id);
+            if (post == null)
+            {
+                _logger.LogError($"Invalid POST attempt in {nameof(DeletePost)}");
+                return BadRequest("Submitted data is invalid");
+            }
+
+            await _unitOfWork.Posts.Delete(id);
+            await _unitOfWork.Save();
+
+            return NoContent();
         }
     }
 }

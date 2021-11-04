@@ -15,7 +15,6 @@ namespace GGCore.Configs
             CreateMap<Post, PostDTO>().ReverseMap();
             CreateMap<Post, CreatePostDTO>().ReverseMap();
             CreateMap<Comment, CommentDTO>().ReverseMap();
-            CreateMap<Comment, CreateCommentDTO>().ReverseMap();
             CreateMap<User, RegisterUserDTO>().ReverseMap();
         }
     }
